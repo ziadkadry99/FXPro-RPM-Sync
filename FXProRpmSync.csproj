@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>User.FXProRpmSync</AssemblyName>
+    <RootNamespace>User.FXProRpmSync</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.1.0</Version>
+    <Product>FXPro RPM Sync</Product>
+    <Authors>ziadkadry99</Authors>
+    <Copyright>Copyright (c) 2026 ziadkadry99. GPL-3.0-or-later.</Copyright>
+    <SimHubPath Condition="'$(SIMHUB_INSTALL_PATH)' != ''">$(SIMHUB_INSTALL_PATH)</SimHubPath>
+    <SimHubPath Condition="'$(SimHubPath)' == ''">C:\Program Files (x86)\SimHub\</SimHubPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="GameReaderCommon"><HintPath>$(SimHubPath)GameReaderCommon.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="SimHub.Plugins"><HintPath>$(SimHubPath)SimHub.Plugins.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="SimHub.Logging"><HintPath>$(SimHubPath)SimHub.Logging.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="log4net"><HintPath>$(SimHubPath)log4net.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(SimHubPath)Newtonsoft.Json.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\menu-icon.png" LogicalName="User.FXProRpmSync.menu-icon.png" />
+  </ItemGroup>
+
+  <!-- Copy into SimHub (SimHub must be closed). Set -p:DeployToSimHub=false to skip. -->
+  <Target Name="DeployToSimHub" AfterTargets="Build" Condition="'$(DeployToSimHub)' != 'false'">
+    <Copy SourceFiles="$(TargetDir)$(TargetName).dll;$(TargetDir)$(TargetName).pdb" DestinationFolder="$(SimHubPath)" ContinueOnError="true" />
+  </Target>
+
+</Project>

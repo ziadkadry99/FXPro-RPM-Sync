@@ -37,7 +37,8 @@ Why SimPro? The FX Pro has no native SimHub LED support, so the plugin configure
 1. Download `FXProRpmSync-vX.Y.zip` from [Releases](https://github.com/ziadkadry99/FXPro-RPM-Sync/releases).
 2. **Close SimHub**, then copy `User.FXProRpmSync.dll` from the zip into your SimHub folder
    (default `C:\Program Files (x86)\SimHub\`).
-3. Start SimHub, and click **Yes** when it asks to enable the new plugin.
+3. Start SimHub. In the **New plugins have been detected** window, turn on the **FXPro RPM Sync** toggle and
+   **Show in left main menu**, then click **Ok**.
 4. Open **FXPro RPM Sync** in SimHub's left menu.
 
 ## Usage
@@ -104,8 +105,8 @@ measured on the wheel.
 ## Troubleshooting
 
 - **Plugin not in SimHub's menu:** check that the DLL is directly in the SimHub folder (not a subfolder) and that
-  SimHub was closed while you copied it. If you declined the enable prompt, turn it on in
-  **Settings → Plugins**.
+  SimHub was closed while you copied it. If you skipped the enable prompt, turn the plugin and
+  **Show in left main menu** on in SimHub's **Settings → Plugins**.
 - **"No Simagic wheel found":** make sure SimPro Manager is running and shows the wheel.
 - **Everything else:** check `SimHub\Logs\SimHub.txt` for lines starting with `[FXProRpmSync]`, and include them in
   your issue.

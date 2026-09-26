@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" alt="FXPro RPM Sync" width="260"></p>
+
 # FXPro RPM Sync
 
 A [SimHub](https://www.simhubdash.com/) plugin that keeps the **Simagic FX Pro**'s rev lights matched to the car

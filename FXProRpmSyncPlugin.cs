@@ -97,7 +97,7 @@ namespace User.FXProRpmSync
         private string modifiedPresetUuid;
         private Target appliedTarget;
         private double appliedScaleMax;
-        private DateTime nextMaxCheckUtc;
+        private DateTime nextMaxCheckUtc, nextWheelCheckUtc;
         // Recent fingerprints we pushed, per preset. SimPro's read-back lags writes, so a read can return any of
         // these; they must never be mistaken for the user editing the preset.
         private readonly Dictionary<string, List<string>> appliedFingerprints = new Dictionary<string, List<string>>();
@@ -542,7 +542,7 @@ namespace User.FXProRpmSync
                 lock (sync) { t = pending; pending = null; }
                 if (t == null && await PushGear().ConfigureAwait(false)) continue;
                 if (t == null) t = await CheckGameMaxChanged().ConfigureAwait(false);
-                if (t == null) { await PollDash().ConfigureAwait(false); await CheckFeedSource().ConfigureAwait(false); continue; }
+                if (t == null) { await CheckWheelChanged().ConfigureAwait(false); await PollDash().ConfigureAwait(false); await CheckFeedSource().ConfigureAwait(false); continue; }
 
                 try
                 {
@@ -583,6 +583,31 @@ namespace User.FXProRpmSync
             if (wheel == null || !Settings.DashSwitching) return;
             try { await dashes.PollAsync(wheel, Driving, DashCarKey, NewCarDashForCurrentCar).ConfigureAwait(false); }
             catch (Exception ex) { SimHub.Logging.Current.Debug("[FXProRpmSync] dash poll failed: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// Every 5 s: if SimPro now lists a different wheel (swapped on the base), switch to it and re-apply the car.
+        /// The old wheel's changes can't be restored any more; SimPro reloads its preset when it's attached again.
+        /// </summary>
+        private async Task CheckWheelChanged()
+        {
+            if (DateTime.UtcNow < nextWheelCheckUtc) return;
+            nextWheelCheckUtc = DateTime.UtcNow.AddSeconds(5);
+            SimProClient.Wheel found;
+            try { found = await simPro.FindWheel().ConfigureAwait(false); }
+            catch { return; }
+            if (found == null || found.DeviceUuid == wheel?.DeviceUuid) return;
+
+            if (wheel != null)
+                SimHub.Logging.Current.Info($"[FXProRpmSync] wheel changed: {wheel.Name} -> {found.Name}");
+            wheel = found;
+            modifiedPresetUuid = null;
+            appliedTarget = null;
+            gearLive = false;
+            gearParts = null;
+            pushedGear = null;
+            dashes.WheelChanged();
+            lock (sync) lastRequested = null; // re-apply the current car on the next frame
         }
 
         /// <summary>Live per-gear curves: sends the current gear's lights when the gear changed. True if it pushed.</summary>

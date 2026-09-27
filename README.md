@@ -32,7 +32,7 @@ screen to each car's dash, and feed the dash with SimHub's data.
 
 | | |
 |---|---|
-| Wheel | Simagic **FX Pro** (tested on an Alpha EVO base). Other Simagic wheels with RPM lights may work but are untested. |
+| Wheel | Simagic **FX Pro** (tested on an Alpha EVO base). The **GT Neo**'s rev lights work too (no dash features: it has no screen). Other Simagic wheels with RPM lights may work but are untested. You can swap wheels while SimHub runs. |
 | SimPro Manager | **SimPro Manager 3** (tested with V3.2.2), running while you drive. The plugin talks to its local API on `127.0.0.1:4010`. |
 | SimHub | Tested with 9.11. The free version is fine. |
 | Game | Must be supported by **both** SimHub (car detection) and SimPro Manager (which drives the LEDs and dash from its own telemetry). With **Dash values from SimHub** on, SimHub support is enough. |

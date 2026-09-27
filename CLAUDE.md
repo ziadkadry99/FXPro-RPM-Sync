@@ -70,7 +70,10 @@ it with `gh release create vX.Y`.
   `preset_get_dev_config` / `preset_set_dev_config` / `preset_save_dev_config`, `game_get_running_list`,
   `get/set_game_auto_switch_preset`, `dash_get_list` / `dash_add` / `dash_modify` / `dash_apply` / `dash_preview` /
   `get_dev_dash_page` / `get_dash_category` / `get_dash_device_size`.
-- Device ids: `{device_uuid, product_uuid}` from `get_device_list` (FX Pro: `0000000002030000`, `old_device: true`).
+- Device ids: `{device_uuid, product_uuid}` from `get_device_list` (FX Pro: `0000000002030000`, `old_device: true`;
+  GT Neo: `0000000002060000`, `old_device: false`, 15-LED `rpm_lights`, no `screens`). The plugin uses the first
+  `product_type:"wheel"` and re-checks every 5 s, so a wheel swap re-applies the car on the new wheel. GT Neo rev
+  lights verified (single-curve car); SimPro's native per-gear mode on it is still untested.
 - `preset_set_dev_config {device_uuid, product_uuid, preset_uuid, part_type:"rpm_lights", part_id:1, config}` sends
   one part live to the wheel.
 - **Read-back lags writes** (~1 write / ~1 s): an immediate `preset_get_selected_dev_config` can return the

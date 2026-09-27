@@ -179,6 +179,15 @@ namespace User.FXProRpmSync
             SimHub.Logging.Current.Info("[FXProRpmSync] " + Status);
         }
 
+        /// <summary>Another wheel was attached: nothing of ours is on it, start over.</summary>
+        public void WheelChanged()
+        {
+            modifiedPresetUuid = null;
+            handledCar = handledDash = expectedDash = lastSeenDash = null;
+            recheckAtUtc = null;
+            WheelDash = null;
+        }
+
         public void ForgetOriginals()
         {
             lock (plugin.SyncRoot) pushed.Clear();

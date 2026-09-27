@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The process SimPro looks for: while "simgame.exe" runs, SimPro reads the plugin's shared memory as a game. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>simgame</AssemblyName>
+    <RootNamespace>SimGameStub</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Product>FXPro RPM Sync SimGame stub</Product>
+    <!-- Same bitness as SimHub (x86), so the plugin can inspect it. -->
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+
+</Project>

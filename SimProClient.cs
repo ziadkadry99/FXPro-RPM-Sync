@@ -69,6 +69,15 @@ namespace User.FXProRpmSync
             return games?.Select(g => (double?)g["maxCarSpeed"] ?? 0).FirstOrDefault(v => v > 0) ?? 0;
         }
 
+        /// <summary>The game SimPro is reading telemetry from, as SimPro names it, or null when none.</summary>
+        public async Task<string> GetRunningGameName()
+        {
+            var games = await Call("game_get_running_list", new { }).ConfigureAwait(false) as JArray;
+            var g = games?.FirstOrDefault(x => (bool?)x["running"] ?? true);
+            if (g == null) return null;
+            return (string)g["sdbGameName"] ?? (string)g["shortName"] ?? (string)g["fullName"] ?? g.ToString(Formatting.None);
+        }
+
         /// <summary>Returns { preset_uuid, config:{ rpm_lights:{...}, ... } } for the active preset.</summary>
         public async Task<JObject> GetSelectedPreset(Wheel w)
         {
@@ -77,6 +86,17 @@ namespace User.FXProRpmSync
                 device_uuid = w.DeviceUuid,
                 product_uuid = w.ProductUuid,
             }).ConfigureAwait(false) as JObject;
+        }
+
+        /// <summary>The dash the wheel is showing right now (follows the wheel's dash button), or null.</summary>
+        public async Task<string> GetWheelDash(Wheel w)
+        {
+            var r = await Call("get_dev_dash_page", new
+            {
+                device_uuid = w.DeviceUuid,
+                product_uuid = w.ProductUuid,
+            }).ConfigureAwait(false);
+            return (string)r?["dash_id"];
         }
 
         /// <summary>Applies one part of a preset live (not saved to the preset until the user hits Save in SimPro).</summary>

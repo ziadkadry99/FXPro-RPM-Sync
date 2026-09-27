@@ -42,6 +42,8 @@ namespace User.FXProRpmSync
 
             var page = new StackPanel { Margin = new Thickness(16), MaxWidth = 1100, HorizontalAlignment = HorizontalAlignment.Left };
             page.Children.Add(BuildGeneral());
+            page.Children.Add(new DashSection(plugin));
+            page.Children.Add(new FeedSection(plugin));
             page.Children.Add(new OverridesSection(plugin));
             page.Children.Add(BuildFallback());
             page.Children.Add(Muted(
@@ -80,6 +82,16 @@ namespace User.FXProRpmSync
             useDb.Checked += (s, e) => { plugin.Settings.UseCarDatabase = true; plugin.SaveSettings(); plugin.Reapply(); };
             useDb.Unchecked += (s, e) => { plugin.Settings.UseCarDatabase = false; plugin.SaveSettings(); plugin.Reapply(); };
             panel.Children.Add(useDb);
+
+            var liveGears = new CheckBox
+            {
+                Content = "Switch the lights by gear for cars whose real lights differ per gear (sends the gear's lights to SimPro on every gear change)",
+                IsChecked = plugin.Settings.LiveGearCurves,
+                Margin = new Thickness(0, -6, 0, 12),
+            };
+            liveGears.Checked += (s, e) => { plugin.Settings.LiveGearCurves = true; plugin.SaveSettings(); plugin.Reapply(); };
+            liveGears.Unchecked += (s, e) => { plugin.Settings.LiveGearCurves = false; plugin.SaveSettings(); plugin.Reapply(); };
+            panel.Children.Add(liveGears);
 
             var status = new TextBlock { TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas"), Opacity = 0.85 };
             panel.Children.Add(new Border

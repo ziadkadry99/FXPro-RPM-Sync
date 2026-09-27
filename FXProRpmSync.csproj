@@ -7,7 +7,7 @@
     <RootNamespace>User.FXProRpmSync</RootNamespace>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>FXPro RPM Sync</Product>
     <Authors>ziadkadry99</Authors>
     <Copyright>Copyright (c) 2026 ziadkadry99. GPL-3.0-or-later.</Copyright>
@@ -27,6 +27,19 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\menu-icon.png" LogicalName="User.FXProRpmSync.menu-icon.png" />
   </ItemGroup>
+
+  <!-- simgame.exe (SimGameStub/) is built first and embedded; the plugin extracts it at runtime (see SimGameFeed). -->
+  <ItemGroup>
+    <Compile Remove="SimGameStub\**" />
+    <None Remove="SimGameStub\**" />
+  </ItemGroup>
+  <Target Name="BuildSimGameStub" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="SimGameStub\SimGameStub.csproj" Targets="Restore" Properties="Configuration=$(Configuration);StubRestore=1" />
+    <MSBuild Projects="SimGameStub\SimGameStub.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <ItemGroup>
+      <EmbeddedResource Include="SimGameStub\bin\$(Configuration)\net48\simgame.exe" LogicalName="User.FXProRpmSync.simgame.exe" />
+    </ItemGroup>
+  </Target>
 
   <!-- Copy into SimHub (SimHub must be closed). Set -p:DeployToSimHub=false to skip. -->
   <Target Name="DeployToSimHub" AfterTargets="Build" Condition="'$(DeployToSimHub)' != 'false'">

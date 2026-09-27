@@ -291,7 +291,10 @@ namespace User.FXProRpmSync
             editing = o;
             editBase = o.CarKey == plugin.CurrentCarKey ? plugin.CurrentBaseLayout?.Clone() : null;
             if (editing.Kind == OverrideKind.Custom && editing.Custom == null)
+            {
                 editing.Custom = editBase?.Clone() ?? DefaultLayout();
+                editing.Custom.Gears = null; // custom lights are the same in every gear
+            }
             if (editing.Kind == OverrideKind.Pattern && editing.Style == null)
                 editing.Style = plugin.Settings.Fallback.Clone();
 

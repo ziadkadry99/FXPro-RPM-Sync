@@ -51,6 +51,19 @@ namespace User.FXProRpmSync
             return c;
         }
 
+        /// <summary>One gear's curve as a plain layout (for wheels that can't do per-gear curves themselves).</summary>
+        public RpmLayout ForGear(string gear)
+        {
+            var c = Clone();
+            c.Gears = null;
+            if (Gears != null && Gears.TryGetValue(gear, out var g))
+            {
+                c.Rpm = (int[])g.Rpm.Clone();
+                c.FlashRpm = g.FlashRpm;
+            }
+            return c;
+        }
+
         /// <summary>As fractions of the shift point, for the animated previews.</summary>
         public LedLayout ToPreview()
         {
@@ -100,7 +113,8 @@ namespace User.FXProRpmSync
                     var curve = car.GearRpm.TryGetValue(gear, out var c) ? c : defaultCurve;
                     var gc = new GearCurve { FlashRpm = layout.FlashRpm > 0 ? curve[0] : 0 };
                     for (int j = 0; j < RpmLightsMapper.WheelLeds; j++)
-                        gc.Rpm[j] = layout.Rpm[j] > 0 ? Math.Max(0, curve[SourceLed(car, j)]) : 0;
+                        // 0 in a gear's curve = lit from idle (e.g. the Porsche Cup's 1st gear), not unused.
+                        gc.Rpm[j] = layout.Rpm[j] > 0 ? Math.Max(1, curve[SourceLed(car, j)]) : 0;
                     layout.Gears[gear] = gc;
                 }
             }

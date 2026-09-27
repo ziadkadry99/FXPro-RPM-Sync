@@ -29,6 +29,8 @@ dotnet build -c Release -p:DeployToSimHub=false   # build only
 |---|---|
 | `FXProRpmSyncPlugin.cs` | SimHub plugin + settings. DataUpdate detects car changes; a background worker does all HTTP. Overrides API, SimHub actions/properties, preset capture/restore. |
 | `SimProClient.cs` | SimPro local API client. |
+| `DashSwitcher.cs`, `DashCatalog.cs`, `DashSection.cs` | Dash per car: switching/learning logic, SimPro's dash names + preview pictures, settings section. |
+| `SimGameFeed.cs`, `SimProTelemetry.cs`, `SimHubFeedMapper.cs`, `FeedSection.cs`, `SimGameStub/` | Dash values from SimHub: SimPro "SimGame" shared memory + simgame.exe stub, struct layout, SimHub -> struct mapping, settings section. |
 | `CarLedDatabase.cs` | Lovely Car Data download/cache, exact + series/team matching. |
 | `RpmLayout.cs` | `RpmLayout` (15 LEDs in real RPM + flash + optional per-gear), `CarOverride`. |
 | `RpmLightsMapper.cs` | RpmLayout ⇄ SimPro `rpm_lights` JSON, percent rounding, palette snapping, fingerprints. |
@@ -96,6 +98,11 @@ rpm_lights["1"]: { max_rpm_source (0 game / 1 custom), selected_mode (0 % / 1 RP
   `mono` = solid, `breath` = blink with `interval` (units ≈ 50 ms is a guess, not verified).
 - **No per-gear, no RPM mode on old devices:** SimPro strips `selected_mode:1` / `lights_rpm` for the FX Pro, and
   its old-device UI has no per-gear mode. The plugin only sends per-gear curves when `old_device` is false (untested).
+- **Live per-gear curves (`LiveGearCurves`, on by default):** for cars whose data differs per gear, the plugin builds
+  one `rpm_lights` part per gear and pushes the current gear's on every gear change (~1 ms per call; works well on
+  the wheel, verified with the iRacing Porsche 992.2 Cup). All gear parts are registered as our fingerprints.
+  Without it the "most common" curve is used, which for such cars is the R/N curve (wrong in every driving gear).
+  A 0 in a gear's curve means lit from idle (Cup car 1st gear), not unused.
 - Presets hold percentages; SimPro supplies each car's max underneath. Official presets are per car for ACC/iRacing.
 
 ## Car data: Lovely Car Data
@@ -134,7 +141,83 @@ plugin re-capture them as "original" — restore the real original before experi
 - Keep the UI visual (animated previews).
 - Free, non-commercial plugin; may be shared publicly.
 
-## Dashes on the FX Pro screen (investigated; custom dashes judged infeasible)
+## Dash per car (DashSwitcher)
+
+Verified on the wheel (2026-09-26):
+- `preset_set_dev_config` with `part_type:"screens"`, `part_id:1`, `config` = the whole `screens["1"]` object applies
+  live: SimPro sends the rotation to the wheel right away (`91 06` dash list via the base).
+- **The wheel ignores `active_dash` and shows the first entry of `selected_dashs`.** So the plugin sends the preset's
+  rotation rotated to start at the car's dash (or with it added in front, max 10 as in SimPro's UI); the dash button
+  keeps cycling the same dashes.
+- `get_dev_dash_page {device_uuid, product_uuid}` → `{dash_id}` follows the wheel, including dash-button presses.
+  Button presses don't change the preset's `screens` part, so they never trigger a re-capture.
+- Dash ids are the wheel's screen page numbers 0-37; names/pictures from `old_offical_dash_list.json` +
+  `offical_dash\screen\*.png` (`dash_get_list` returns the same with image URLs). Id 7 "BaseSettings" is the FFB
+  settings screen: never learned, not offered.
+- Each push makes the wheel save its config page to flash (same as a dash-button press), so pushes only happen when the
+  wanted rotation differs from the last one sent.
+
+Behaviour: on a car change, the car's saved dash (per "Game | CarId", `Settings.CarDashes`) is shown; for cars without
+one nothing is sent, so the wheel stays on its current dash (user preference). If the selected preset changed since
+our last push, SimPro has sent its own rotation and is in charge: the plugin drops its state (nothing to restore).
+The wheel is only switched on a car change or when the current car's saved dash changes (not on other re-applies
+such as settings saves or SimPro's late max RPM), and not at all when `get_dev_dash_page` already shows the dash. Learning: the worker polls `get_dev_dash_page` every 1.5 s; a change while
+driving that isn't ours (4 s quiet time after a push) is saved for the car as *learned*. Dashes *picked* on the
+settings page (or with the `KeepWheelDashForCurrentCar` action) are never overwritten by learning. 4 s after a push
+the wheel is checked once more and the dash re-sent if something else (e.g. SimPro's per-game preset auto switch)
+replaced it. Originals per preset in `Settings.ScreensOriginals`, restored with the rev lights (exit / Restore /
+disable).
+
+## Dash values from SimHub (SimGame feed)
+
+Replaces SimPro's game telemetry with SimHub's data (option, off by default). Traced end to end; details and evidence
+in `E:\Development\FXProDashes` (README "Wire format", docs/firmware-notes.md).
+
+- **Route:** SimPro's built-in SimGame source. While a process named `simgame.exe` runs, SimPro treats it as the game
+  and memcpy's `_STelemetryData` (3136 bytes) from the shared memory `/simgame` (`SimgameReader::pollData`). The
+  plugin creates the mapping *before* starting the stub (SimPro runs elevated), writes the struct on every SimHub
+  `DataUpdate`, and runs `simgame.exe` (tiny net48 x86 exe from `SimGameStub/`, embedded in the DLL, extracted to
+  `PluginsData\Common\FXProRpmSync\`, exits with SimHub).
+- **SimPro selects a game only when none is selected** (`STelemetryManager::serviceThread`, every 2 s: first running
+  game in its supported list, then kept until that process exits). So SimGame must run before the game starts; if
+  the game was already selected, SimPro keeps reading it (the settings page shows SimPro's running game).
+- **Observed with SimPro 3.2.2 (2026-09-27):** SimGame works (demo verified on the wheel). Restarting SimHub
+  mid-game killed the stub, SimPro switched to the running game (AMS2), and after the game closed SimPro did **not**
+  go back to SimGame, not even after the stub restarted. Recovered only after a full SimPro restart (backend
+  processes, not just the window) plus a wheelbase restart. `game_get_running_list` never shows SimGame (not in
+  SimPro's game list), so "no game" is what it reports while SimGame is in use.
+  Hence the stub **outlives SimHub restarts** (runs while any SimHubWPF runs, exits 30 s after SimHub is gone; the
+  restarted plugin adopts it) and the plugin only kills it when the option is turned off. On SimHub exit the plugin
+  writes a zeroed struct (dash idle) and leaves the stub running.
+- **Side effects while on:** SimPro sees SimGame, so its per-game preset auto switch doesn't fire and everything it
+  drives from game telemetry (dash, rev lights via `maxRpm`, telemetry effects) uses SimHub's data. FFB unaffected.
+- **Mapping:** SimPro's `_STelemetryData` mirrors SimHub's data model (same field names, down to SimHub internals),
+  so fields map by name (`SimHubFeedMapper`). Units/ranges, verified in SimPro 3.1.1 (`TelemetryData_v2tov1`,
+  `packetTelemetryHigh/Low`) and wheel firmware 1.3.11 (widget senders):
+  - SimHub converts pressure / temperature / fuel to the user's display units (`TyrePressureUnit` Psi/Kpa/Bar,
+    `TemperatureUnit` Celcius/Fahrenheit/Kelvin, `FuelUnit` Liters/Gallons); the struct needs **psi, °C, litres**
+    (the wheel converts for display from SimPro's `su/tu/pu/fu` settings). `Computed.Fuel_LitersPerLap` is also in the
+    user's fuel unit.
+  - **Gaps:** struct ints in **hundredths of a second**, positive. Wheel: `gapa` = value/100 `"%.1f"`, `gapb` =
+    value/100 `"-%.1f"`, u16 (0-655.35 s). SimPro takes `abs(gapBehind)`. Race: SimHub `GaptoPlayer` of the cars one
+    position ahead/behind (class filter by `CarClass`); other sessions: `RelativeGapToPlayer` of the nearest cars.
+  - Delta `gainLoss`: seconds, + = slower, x100 int16; wheel `"%+0.2f"`, gain/loss bars over ±5 s.
+  - Clutch: % pressed in both SimHub (100 - raw engagement) and SimPro's readers; the wheel draws `cl` as 100 - value.
+  - Tyre wear: % remaining (100 = new) in SimHub; wheel `"%d%%"`. Fuel per lap: `fuelPerLap` = L/lap x10 (byte).
+  - Widths: speed 9 bits, rpm 15 bits, fuel/bias/tyre pressure x10 in 10 bits (max 102.3), brake temps 10 bits,
+    tyre/water/oil temps and oil pressure bytes, ABS level and ERS mode low nibbles, lap times ms.
+  - SimPro bug: corner 1's middle tyre temperature is sent as corner 0's.
+  - Game-specific (raw) values: ACC `Graphics.TCCut`; iRacing `Telemetry.dc*` (TC2, ARB, engine braking, diff, TPS,
+    MGU-K deploy mode), plus per-field SimHub property overrides.
+- **Demo** (`DemoCar.cs`, ported from FXProDashes with gaps fixed to 1/100 s and every field animated): runtime-only
+  switch; a 50 Hz timer steps the simulated lap and writes the struct, while `DataUpdate`'s SimHub mapping pauses.
+- Not yet checked on the wheel: SimPro's display name for SimGame (the settings page shows whatever
+  `game_get_running_list` returns).
+
+## Dashes on the FX Pro screen (first investigation)
+
+Superseded for custom dashes: the screen image is a TJC `.tft` that has since been decoded, mapped and modified
+offline; see `E:\Development\FXProDashes\docs\findings.md`.
 
 - **The FX Pro's dashes are built into its screen firmware.** SimPro only sends the rotation and live telemetry
   (quitting SimPro leaves the dash visible and cycleable; SimPro writes ~100 KB/s in-car, not video).

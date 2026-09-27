@@ -51,6 +51,13 @@ Why SimPro? The FX Pro has no native SimHub LED support, so the plugin configure
 Start SimPro Manager and SimHub, select your usual preset in SimPro, and drive. That's it: on every car change the
 settings page shows the car, where its lights came from, and the shift point / max RPM that were applied.
 
+### Lights that change per gear
+
+Some cars' real shift lights are different in each gear (iRacing's Porsche 911 Cup, for example, lights up much
+earlier in 1st than in 6th). The FX Pro has no per-gear mode, so the plugin sends the current gear's lights to SimPro
+every time you shift. This is on by default; untick **Switch the lights by gear** to use one set of lights in every
+gear. Cars with the same lights in every gear aren't affected.
+
 ### Cars without rev light data
 
 Cars that aren't in the database get the style you choose under **Cars without rev light data**:
@@ -75,7 +82,8 @@ choose:
 | **Set each LED** | Sets the RPM and color of each of the 15 LEDs, plus the shift flash, by hand. |
 | **Use a pattern** | Applies one of the fallback patterns to this car, keeping the car's own shift point. |
 
-Overrides are saved per game and car and applied automatically.
+Overrides are saved per game and car and applied automatically. **Shift earlier / later** keeps a car's per-gear
+lights (every gear moves by the offset); the other two use the same lights in every gear.
 
 **Tune while driving:** in SimHub → **Controls and events**, map the actions
 `FXProRpmSyncPlugin.CurrentCarLightsLater` / `FXProRpmSyncPlugin.CurrentCarLightsEarlier` to wheel buttons.

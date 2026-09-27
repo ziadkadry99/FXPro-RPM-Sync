@@ -7,12 +7,13 @@
 
 # FXPro RPM Sync
 
-A [SimHub](https://www.simhubdash.com/) plugin that keeps the **Simagic FX Pro**'s rev lights matched to the car
-you're driving, automatically, in every game.
+A [SimHub](https://www.simhubdash.com/) plugin that keeps the **Simagic FX Pro**'s rev lights and dash matched to
+the car you're driving, automatically, in every game.
 
 Out of the box, SimPro Manager uses one set of RPM light thresholds per preset. That means the shift lights are
 early in some cars and late in others. FXPro RPM Sync detects each car change in SimHub and pushes that car's real
-shift-light pattern, colors and shift point to the wheel through SimPro Manager.
+shift-light pattern, colors and shift point to the wheel through SimPro Manager. It can also switch the wheel's
+screen to each car's dash, and feed the dash with SimHub's data.
 
 - **Real per-car shift lights** from the community [Lovely Car Data](https://github.com/Lovely-Sim-Racing/lovely-car-data)
   database, including cars whose lights change per gear (e.g. iRacing's Porsche 911 Cup): the wheel switches to
@@ -21,6 +22,8 @@ shift-light pattern, colors and shift point to the wheel through SimPro Manager.
 - **Per-car overrides** when a car's lights don't match the game, including a nudge from a wheel button while driving.
 - **Dash per car:** the wheel's screen switches to each car's dash when you get in it. Pick a dash with the dash
   button while driving and it's remembered for that car, or choose one from the gallery.
+- **Dash values from SimHub** (optional): gaps ahead/behind, fuel per lap, tyres and more on the wheel's dash, from
+  SimHub's data instead of SimPro's, in every game SimHub supports.
 - **Non-destructive:** your SimPro preset is never saved over. The original lights are restored when SimHub exits.
 
 ![FXPro RPM Sync settings page in SimHub](assets/settings.png)
@@ -32,7 +35,7 @@ shift-light pattern, colors and shift point to the wheel through SimPro Manager.
 | Wheel | Simagic **FX Pro** (tested on an Alpha EVO base). Other Simagic wheels with RPM lights may work but are untested. |
 | SimPro Manager | **SimPro Manager 3** (tested with V3.2.2), running while you drive. The plugin talks to its local API on `127.0.0.1:4010`. |
 | SimHub | Tested with 9.11. The free version is fine. |
-| Game | Must be supported by **both** SimHub (car detection) and SimPro Manager (which drives the LEDs from its own telemetry). |
+| Game | Must be supported by **both** SimHub (car detection) and SimPro Manager (which drives the LEDs and dash from its own telemetry). With **Dash values from SimHub** on, SimHub support is enough. |
 | Internet | Needed the first time a car is looked up. Car data is cached locally afterwards. |
 
 Why SimPro? The FX Pro has no native SimHub LED support, so the plugin configures the lights through SimPro, and SimPro sends them to the wheel.
@@ -127,8 +130,11 @@ If you edit the preset's RPM lights in SimPro, press **Re-capture preset** so th
 
 ### SimHub properties
 
-`FXProRpmSyncPlugin.Status`, `CurrentCar`, `AppliedMaxRpm`, `AppliedRedline`, `LightsSource`, and
-`CurrentCarOverride` are available for dashboards.
+`FXProRpmSyncPlugin.Status`, `CurrentCar`, `AppliedMaxRpm`, `AppliedRedline`, `LightsSource`,
+`CurrentCarOverride`, `WheelDash` and `CurrentCarDash` are available for dashboards.
+
+Actions for **Controls and events**: `CurrentCarLightsLater`, `CurrentCarLightsEarlier`, `KeepWheelDashForCurrentCar`,
+`ReapplyNow` and `RestoreOriginal`.
 
 ## How it works
 
@@ -140,7 +146,13 @@ If you edit the preset's RPM lights in SimPro, press **Re-capture preset** so th
    SimPro reads for the current car**, so the plugin scales to that. It also snaps thresholds to whole percents and
    colors to SimPro's palette, which is what the FX Pro actually displays.
 5. The lights are sent live to the wheel through SimPro Manager's local API (`preset_set_dev_config`), without
-   saving the preset.
+   saving the preset. For cars with per-gear lights, the current gear's lights are sent on every gear change.
+
+**Dashes:** the FX Pro's dashes are built into the wheel; SimPro only sends the preset's dash list and the live
+values. On a car change the plugin sends the dash list with the car's dash first (the wheel shows the first one), and
+it watches which dash the wheel shows to learn your dash-button picks. With **Dash values from SimHub** on, the plugin
+runs a small helper (`simgame.exe`) that SimPro reads as its built-in "SimGame" source, and fills it with SimHub's
+data on every update.
 
 SimPro's API is undocumented; see [CLAUDE.md](CLAUDE.md) for the reverse-engineered details and the FX Pro behavior
 measured on the wheel.
@@ -151,6 +163,9 @@ measured on the wheel.
   SimHub was closed while you copied it. If you skipped the enable prompt, turn the plugin and
   **Show in left main menu** on in SimHub's **Settings → Plugins**.
 - **"No Simagic wheel found":** make sure SimPro Manager is running and shows the wheel.
+- **Dash values from SimHub not showing:** the settings page shows what SimPro is reading. If it's your game rather
+  than SimGame, close the game, make sure the option is on, and start the game again. If SimPro still doesn't pick
+  up SimGame, fully restart SimPro Manager (and, if needed, the wheelbase).
 - **Everything else:** check `SimHub\Logs\SimHub.txt` for lines starting with `[FXProRpmSync]`, and include them in
   your issue.
 

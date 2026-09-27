@@ -20,6 +20,8 @@ shift-light pattern, colors and shift point to the wheel through SimPro Manager.
 - **Per-car overrides** when a car's lights don't match the game, including a nudge from a wheel button while driving.
 - **Non-destructive:** your SimPro preset is never saved over. The original lights are restored when SimHub exits.
 
+![FXPro RPM Sync settings page in SimHub](assets/settings.png)
+
 ## Requirements
 
 | | |

@@ -1,3 +1,7 @@
+> ## This project has moved
+>
+> **FXPro RPM Sync is now [FX Unleashed](https://github.com/fxunleashed/fx-unleashed)**: new releases, issues and source are there, and the website and guide are at **[fxunleashed.com](https://fxunleashed.com)**. This repository is archived. Install the new one over this one: same DLL, your settings carry over.
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-nobg.png">
